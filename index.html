@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phong Dashboard</title>
+<style>
+body { font-family: Arial; margin: 0; padding: 0; background: #f0f0f0; }
+header { background: #333; color: white; padding: 10px; text-align: center; }
+.menu { display: flex; justify-content: space-around; background: #444; color: white; padding: 10px; }
+.menu button { background: #666; color: white; border: none; padding: 10px; cursor: pointer; }
+.container { padding: 20px; }
+input, select, button { margin: 5px 0; padding: 5px; width: 100%; }
+.card { background: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>Phong Dashboard</h1>
+</header>
+
+<div class="menu">
+<button onclick="showSection('coin')">Đổi Coin</button>
+<button onclick="showSection('brainrot')">Đổi Acc Brainrot</button>
+<button id="adminBtn" style="display:none;" onclick="showSection('admin')">Quản lý</button>
+</div>
+
+<div class="container">
+<div id="loginSection">
+<h2>Đăng nhập / Đăng ký</h2>
+<input type="text" id="username" placeholder="Tên đăng nhập">
+<input type="password" id="password" placeholder="Mật khẩu">
+<button onclick="register()">Đăng ký</button>
+<button onclick="login()">Đăng nhập</button>
+<p id="loginMsg"></p>
+</div>
+
+<div id="coinSection" style="display:none;">
+<h2>Đổi Coin</h2>
+<h3>Đổi bằng Robux</h3>
+<select id="robuxType">
+<option value="vng">40 Robux VNG = 20 Coin</option>
+<option value="lau">10 Robux (lậu) = 4 Coin</option>
+</select>
+<input type="number" id="robuxAmount" placeholder="Số lượng">
+<button onclick="exchangeRobux()">Đổi</button>
+
+<h3>Đổi bằng Brainrot</h3>
+<select id="brainrotItem">
+<option value="67">67 = 40 Coin</option>
+<option value="los67">Los 67 = 50 Coin</option>
+<option value="laGrande">La grande combinasion = 25 Coin</option>
+<option value="losCombi">Los combina = 20 Coin</option>
+<option value="laSpooky">La spooky combinasion = 20 Coin</option>
+<option value="losSpooky">Los spooky combinasion = 25 Coin</option>
+<option value="tangtang">Tangtang keletang = 40 Coin</option>
+<option value="tictac">Tic tac sahur = 45 Coin</option>
+<option value="chips">Chips and queso = 60 Coin</option>
+<option value="garama">Garama and madungdung = 300 Coin</option>
+<option value="dragon">Dragon cannelonni = 1600 Coin</option>
+<option value="strawberry">Strawberry elephant = 6800 Coin</option>
+<option value="meowl">MEOWL = 6000 Coin</option>
+</select>
+<input type="number" id="brainrotAmount" placeholder="Số lượng">
+<button onclick="exchangeBrainrot()">Đổi</button>
+<p id="coinMsg"></p>
+</div>
+
+<div id="brainrotSection" style="display:none;">
+<h2>Đổi Acc Brainrot</h2>
+<div id="accList"></div>
+<h3>Lịch sử mua</h3>
+<div id="historyList"></div>
+</div>
+
+<div id="adminSection" style="display:none;">
+<h2>Quản lý Admin</h2>
+<h3>Upload acc</h3>
+<input type="text" id="accName" placeholder="Tên acc">
+<input type="number" id="accCoin" placeholder="Giá coin">
+<input type="text" id="accUser" placeholder="Tài khoản">
+<input type="text" id="accPass" placeholder="Mật khẩu">
+<button onclick="uploadAcc()">Upload</button>
+
+<h3>Set coin user</h3>
+<input type="text" id="setCoinUser" placeholder="Tên user">
+<input type="number" id="setCoinAmount" placeholder="Số coin">
+<button onclick="setCoin()">Set Coin</button>
+
+<h3>Lịch sử dùng</h3>
+<div id="adminHistory"></div>
+</div>
+</div>
+
+<script>
+let currentUser = null;
+let users = JSON.parse(localStorage.getItem('users')||'{}');
+let accs = JSON.parse(localStorage.getItem('accs')||'[]');
+let history = JSON.parse(localStorage.getItem('history')||'[]');
+
+function showSection(section){
+    document.getElementById('coinSection').style.display='none';
+    document.getElementById('brainrotSection').style.display='none';
+    document.getElementById('adminSection').style.display='none';
+    if(section==='coin') document.getElementById('coinSection').style.display='block';
+    if(section==='brainrot') renderAccList(), document.getElementById('brainrotSection').style.display='block';
+    if(section==='admin') renderAdminHistory(), document.getElementById('adminSection').style.display='block';
+}
+
+function register(){
+    let u=document.getElementById('username').value;
+    let p=document.getElementById('password').value;
+    if(users[u]) { document.getElementById('loginMsg').innerText='Tên đã tồn tại'; return; }
+    users[u]={pass:p, coin:0};
+    localStorage.setItem('users', JSON.stringify(users));
+    loginMsg.innerText='Đăng ký thành công, đang đăng nhập';
+    loginUser(u);
+}
+
+function login(){
+    let u=document.getElementById('username').value;
+    let p=document.getElementById('password').value;
+    if((u==='adminphong' && p==='phong2000') || (users[u] && users[u].pass===p)){
+        loginUser(u);
+        document.getElementById('loginMsg').innerText='Đăng nhập thành công';
+    } else document.getElementById('loginMsg').innerText='Sai tên hoặc mật khẩu';
+}
+
+function loginUser(u){
+    currentUser=u;
+    document.getElementById('loginSection').style.display='none';
+    document.getElementById('adminBtn').style.display=(u==='adminphong')?'inline-block':'none';
+}
+
+function exchangeRobux(){
+    if(!currentUser){ alert('Đăng nhập trước'); return; }
+    let type=document.getElementById('robuxType').value;
+    let amount=Number(document.getElementById('robuxAmount').value);
+    let coin = (type==='vng') ? amount/2 : amount*0.4;
+    if(currentUser==='adminphong') users[currentUser].coin=coin; 
+    else users[currentUser].coin=(users[currentUser].coin||0)+coin;
+    saveUsers();
+    document.getElementById('coinMsg').innerText='Đổi thành công, coin hiện tại: '+users[currentUser].coin;
+}
+
+const brainrotCoins = {
+    '67':40,'los67':50,'laGrande':25,'losCombi':20,'laSpooky':20,
+    'losSpooky':25,'tangtang':40,'tictac':45,'chips':60,'garama':300,
+    'dragon':1600,'strawberry':6800,'meowl':6000
+};
+
+function exchangeBrainrot(){
+    if(!currentUser){ alert('Đăng nhập trước'); return; }
+    let item=document.getElementById('brainrotItem').value;
+    let amount=Number(document.getElementById('brainrotAmount').value);
+    let coin = brainrotCoins[item]*amount;
+    users[currentUser].coin=(users[currentUser].coin||0)+coin;
+    saveUsers();
+    document.getElementById('coinMsg').innerText='Đổi thành công, coin hiện tại: '+users[currentUser].coin;
+}
+
+function renderAccList(){
+    let html='';
+    accs.forEach((a,i)=>{
+        html+=`<div class="card"><b>${a.name}</b> - Giá: ${a.coin} Coin 
+        <button onclick="buyAcc(${i})">Mua</button></div>`;
+    });
+    document.getElementById('accList').innerHTML=html;
+    renderHistory();
+}
+
+function buyAcc(i){
+    let a=accs[i];
+    if(users[currentUser].coin>=a.coin){
+        users[currentUser].coin-=a.coin;
+        history.push({user:currentUser, acc:a.name, coin:a.coin});
+        accs.splice(i,1);
+        saveUsers(); saveAccs(); saveHistory();
+        renderAccList();
+    } else alert('Không đủ coin');
+}
+
+function uploadAcc(){
+    let name=document.getElementById('accName').value;
+    let coin=Number(document.getElementById('accCoin').value);
+    let user=document.getElementById('accUser').value;
+    let pass=document.getElementById('accPass').value;
+    accs.push({name:name, coin:coin, user:user, pass:pass});
+    saveAccs();
+    alert('Upload thành công');
+}
+
+function setCoin(){
+    let user=document.getElementById('setCoinUser').value;
+    let amount=Number(document.getElementById('setCoinAmount').value);
+    if(users[user]){ users[user].coin=amount; saveUsers(); alert('Set coin thành công'); }
+    else alert('Người dùng không tồn tại');
+}
+
+function renderHistory(){
+    let html='';
+    history.filter(h=>h.user===currentUser).forEach(h=>{
+        html+=`<div class="card">${h.acc} - ${h.coin} Coin</div>`;
+    });
+    document.getElementById('historyList').innerHTML=html;
+}
+
+function renderAdminHistory(){
+    let html='';
+    history.forEach(h=>{
+        html+=`<div class="card">${h.user} mua ${h.acc} - ${h.coin} Coin</div>`;
+    });
+    document.getElementById('adminHistory').innerHTML=html;
+}
+
+function saveUsers(){ localStorage.setItem('users', JSON.stringify(users)); }
+function saveAccs(){ localStorage.setItem('accs', JSON.stringify(accs)); }
+function saveHistory(){ localStorage.setItem('history', JSON.stringify(history)); }
+</script>
+
+</body>
+                  </html>
