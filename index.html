@@ -12,6 +12,7 @@ header { background: #333; color: white; padding: 10px; text-align: center; }
 .container { padding: 20px; }
 input, select, button { margin: 5px 0; padding: 5px; width: 100%; }
 .card { background: white; padding: 10px; margin: 10px 0; border-radius: 5px; }
+.detail { background:#eee; padding:5px; margin-top:5px; border-radius:3px; }
 </style>
 </head>
 <body>
@@ -27,6 +28,7 @@ input, select, button { margin: 5px 0; padding: 5px; width: 100%; }
 </div>
 
 <div class="container">
+
 <div id="loginSection">
 <h2>Đăng nhập / Đăng ký</h2>
 <input type="text" id="username" placeholder="Tên đăng nhập">
@@ -65,6 +67,7 @@ input, select, button { margin: 5px 0; padding: 5px; width: 100%; }
 <input type="number" id="brainrotAmount" placeholder="Số lượng">
 <button onclick="exchangeBrainrot()">Đổi</button>
 <p id="coinMsg"></p>
+<p id="tiktokMsg" style="color:blue;"></p>
 </div>
 
 <div id="brainrotSection" style="display:none;">
@@ -91,18 +94,40 @@ input, select, button { margin: 5px 0; padding: 5px; width: 100%; }
 <h3>Lịch sử dùng</h3>
 <div id="adminHistory"></div>
 </div>
-</div>
 
 <script>
-let currentUser = null;
 let users = JSON.parse(localStorage.getItem('users')||'{}');
 let accs = JSON.parse(localStorage.getItem('accs')||'[]');
 let history = JSON.parse(localStorage.getItem('history')||'[]');
+let currentUser = null;
+const BRAINROT_COINS = {
+    '67':40,'los67':50,'laGrande':25,'losCombi':20,'laSpooky':20,
+    'losSpooky':25,'tangtang':40,'tictac':45,'chips':60,'garama':300,
+    'dragon':1600,'strawberry':6800,'meowl':6000
+};
+
+// Load session
+let session = JSON.parse(localStorage.getItem('session')||'{}');
+let now = new Date().getTime();
+if(session.user && now-session.time<30*60*1000){
+    currentUser = session.user;
+    document.getElementById('loginSection').style.display='none';
+    document.getElementById('adminBtn').style.display=(currentUser==='adminphong')?'inline-block':'none';
+}
+
+function saveUsers(){ localStorage.setItem('users', JSON.stringify(users)); }
+function saveAccs(){ localStorage.setItem('accs', JSON.stringify(accs)); }
+function saveHistory(){ localStorage.setItem('history', JSON.stringify(history)); }
+
+function saveSession(){ 
+    localStorage.setItem('session', JSON.stringify({user:currentUser,time:new Date().getTime()}));
+}
 
 function showSection(section){
     document.getElementById('coinSection').style.display='none';
     document.getElementById('brainrotSection').style.display='none';
     document.getElementById('adminSection').style.display='none';
+    document.getElementById('tiktokMsg').innerText='';
     if(section==='coin') document.getElementById('coinSection').style.display='block';
     if(section==='brainrot') renderAccList(), document.getElementById('brainrotSection').style.display='block';
     if(section==='admin') renderAdminHistory(), document.getElementById('adminSection').style.display='block';
@@ -113,7 +138,7 @@ function register(){
     let p=document.getElementById('password').value;
     if(users[u]) { document.getElementById('loginMsg').innerText='Tên đã tồn tại'; return; }
     users[u]={pass:p, coin:0};
-    localStorage.setItem('users', JSON.stringify(users));
+    saveUsers();
     loginMsg.innerText='Đăng ký thành công, đang đăng nhập';
     loginUser(u);
 }
@@ -129,6 +154,7 @@ function login(){
 
 function loginUser(u){
     currentUser=u;
+    saveSession();
     document.getElementById('loginSection').style.display='none';
     document.getElementById('adminBtn').style.display=(u==='adminphong')?'inline-block':'none';
 }
@@ -142,22 +168,18 @@ function exchangeRobux(){
     else users[currentUser].coin=(users[currentUser].coin||0)+coin;
     saveUsers();
     document.getElementById('coinMsg').innerText='Đổi thành công, coin hiện tại: '+users[currentUser].coin;
+    document.getElementById('tiktokMsg').innerText='Nhắn TikTok hnphong_anime để nhận coin';
 }
-
-const brainrotCoins = {
-    '67':40,'los67':50,'laGrande':25,'losCombi':20,'laSpooky':20,
-    'losSpooky':25,'tangtang':40,'tictac':45,'chips':60,'garama':300,
-    'dragon':1600,'strawberry':6800,'meowl':6000
-};
 
 function exchangeBrainrot(){
     if(!currentUser){ alert('Đăng nhập trước'); return; }
     let item=document.getElementById('brainrotItem').value;
     let amount=Number(document.getElementById('brainrotAmount').value);
-    let coin = brainrotCoins[item]*amount;
+    let coin = BRAINROT_COINS[item]*amount;
     users[currentUser].coin=(users[currentUser].coin||0)+coin;
     saveUsers();
     document.getElementById('coinMsg').innerText='Đổi thành công, coin hiện tại: '+users[currentUser].coin;
+    document.getElementById('tiktokMsg').innerText='Nhắn TikTok hnphong_anime để nhận coin';
 }
 
 function renderAccList(){
@@ -174,7 +196,7 @@ function buyAcc(i){
     let a=accs[i];
     if(users[currentUser].coin>=a.coin){
         users[currentUser].coin-=a.coin;
-        history.push({user:currentUser, acc:a.name, coin:a.coin});
+        history.push({user:currentUser, acc:a.name, coin:a.coin, detail:{user:a.user, pass:a.pass}});
         accs.splice(i,1);
         saveUsers(); saveAccs(); saveHistory();
         renderAccList();
@@ -201,7 +223,8 @@ function setCoin(){
 function renderHistory(){
     let html='';
     history.filter(h=>h.user===currentUser).forEach(h=>{
-        html+=`<div class="card">${h.acc} - ${h.coin} Coin</div>`;
+        html+=`<div class="card">${h.acc} - ${h.coin} Coin
+        <div class="detail">Tài khoản: ${h.detail.user} | Mật khẩu: ${h.detail.pass}</div></div>`;
     });
     document.getElementById('historyList').innerHTML=html;
 }
@@ -209,15 +232,13 @@ function renderHistory(){
 function renderAdminHistory(){
     let html='';
     history.forEach(h=>{
-        html+=`<div class="card">${h.user} mua ${h.acc} - ${h.coin} Coin</div>`;
+        html+=`<div class="card">${h.user} mua ${h.acc} - ${h.coin} Coin 
+        <div class="detail">Tài khoản: ${h.detail.user} | Mật khẩu: ${h.detail.pass}</div></div>`;
     });
     document.getElementById('adminHistory').innerHTML=html;
 }
 
-function saveUsers(){ localStorage.setItem('users', JSON.stringify(users)); }
-function saveAccs(){ localStorage.setItem('accs', JSON.stringify(accs)); }
-function saveHistory(){ localStorage.setItem('history', JSON.stringify(history)); }
 </script>
 
 </body>
-                  </html>
+    </html>
