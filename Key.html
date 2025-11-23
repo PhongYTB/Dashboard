@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF8">
+<title>Key</title>
+</head>
+<body>
+
+<script>
+let p = new URLSearchParams(window.location.search);
+let id = p.get("id");
+
+let sid = localStorage.getItem("kid");
+let t = localStorage.getItem("ktime");
+let now = Date.now();
+let limit = 5*60*60*1000;
+
+if (!id || id !== sid) {
+    document.body.innerHTML = "<h2 style='textalign:center;margintop:40px;'>Anti Bypass From Phong</h2>";
+} else if (now - t > limit) {
+    document.body.innerHTML = "<h2 style='textalign:center;margintop:40px;'>Anti Bypass From Phong</h2>";
+} else {
+    document.body.innerHTML = `
+    <div style='textalign:center;paddingtop:40px;'>
+        <p style='fontsize:22px;'>Your Key</p>
+        <p id='key' style='fontsize:20px;margin:10px 0;'>FREE_Phonghub01382919</p>
+        <button onclick='copyK()' style='padding:10px 20px;fontsize:18px;'>Copy</button>
+    </div>
+    `;
+}
+
+function copyK() {
+    let k = document.getElementById("key").innerText;
+    navigator.clipboard.writeText(k);
+    alert("Da copy key");
+}
+</script>
+
+</body>
+</html>
