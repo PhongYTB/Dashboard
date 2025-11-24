@@ -13,9 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Update Key.json
+      - name: Update key.json
         run: |
-          FILE="Key.json"
+          FILE="key.json"
           KEYS=(
             "FREE_PhonghubOT$(date +%s | sha256sum | head -c6)"
             "FREE_PhonghubMz$(date +%s | sha256sum | head -c6)"
@@ -30,10 +30,13 @@ jobs:
           sed -i '$ s/,$//' $FILE
           echo "]" >> $FILE
 
-      - name: Commit and push changes
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add Key.json
-          git commit -m "Auto update key"
-          git push
+          git add key.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto update key.json"
+            git push
+          else
+            echo "No changes to commit"
