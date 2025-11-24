@@ -1,16 +1,40 @@
-on: workflow_dispatch: schedule: - cron: "* * * * *"
-jobs: auto: runs-on: ubuntu-latest steps: - name: Checkout uses: actions/checkout@v3
-- name: Loop update
-    run: |
-      for i in {1..6}
-      do
-        NUM=$RANDOM
-        BASE=$(echo -n $NUM | base64)
-        echo "{\"key\":\"FREE_Phonghub$BASE\"}" > Key.json
-        git config user.name "auto"
-        git config user.email "auto@github.com"
-        git add Key.json
-        git commit -m "update"
-        git push
-        sleep 10
-      done
+name: Update Key
+
+on:
+  schedule:
+    - cron: '*/1 * * * *' # chạy mỗi phút
+  workflow_dispatch: # cho phép chạy thủ công
+
+jobs:
+  update-key:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Update key.json
+        run: |
+          FILE="Key.json"
+          KEYS=(
+            "FREE_PhonghubOT$(date +%s | sha256sum | head -c 6)"
+            "FREE_PhonghubMz$(date +%s | sha256sum | head -c 6)"
+            "FREE_PhonghubMj$(date +%s | sha256sum | head -c 6)"
+            "FREE_PhonghubND$(date +%s | sha256sum | head -c 6)"
+            "FREE_PhonghubOD$(date +%s | sha256sum | head -c 6)"
+          )
+          echo "[" > $FILE
+          for KEY in "${KEYS[@]}"; do
+            echo "  \"$KEY\"," >> $FILE
+          done
+          # Xoá dấu phẩy cuối cùng
+          sed -i '$ s/,$//' $FILE
+          echo "]" >> $FILE
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add Key.json
+          git commit -m "Auto update key"
+          git push
