@@ -2,36 +2,35 @@ name: Update Key
 
 on:
   schedule:
-    - cron: '*/1 * * * *' # chạy mỗi phút
-  workflow_dispatch: # cho phép chạy thủ công
+    - cron: '*/1 * * * *'
+  workflow_dispatch:
 
 jobs:
   update-key:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Update key.json
+      - name: Update Key.json
         run: |
           FILE="Key.json"
           KEYS=(
-            "FREE_PhonghubOT$(date +%s | sha256sum | head -c 6)"
-            "FREE_PhonghubMz$(date +%s | sha256sum | head -c 6)"
-            "FREE_PhonghubMj$(date +%s | sha256sum | head -c 6)"
-            "FREE_PhonghubND$(date +%s | sha256sum | head -c 6)"
-            "FREE_PhonghubOD$(date +%s | sha256sum | head -c 6)"
+            "FREE_PhonghubOT$(date +%s | sha256sum | head -c6)"
+            "FREE_PhonghubMz$(date +%s | sha256sum | head -c6)"
+            "FREE_PhonghubMj$(date +%s | sha256sum | head -c6)"
+            "FREE_PhonghubND$(date +%s | sha256sum | head -c6)"
+            "FREE_PhonghubOD$(date +%s | sha256sum | head -c6)"
           )
           echo "[" > $FILE
           for KEY in "${KEYS[@]}"; do
             echo "  \"$KEY\"," >> $FILE
           done
-          # Xoá dấu phẩy cuối cùng
           sed -i '$ s/,$//' $FILE
           echo "]" >> $FILE
 
-      - name: Commit and push
+      - name: Commit and push changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
