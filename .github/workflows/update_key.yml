@@ -1,0 +1,16 @@
+on: workflow_dispatch: schedule: - cron: "* * * * *"
+jobs: auto: runs-on: ubuntu-latest steps: - name: Checkout uses: actions/checkout@v3
+- name: Loop update
+    run: |
+      for i in {1..6}
+      do
+        NUM=$RANDOM
+        BASE=$(echo -n $NUM | base64)
+        echo "{\"key\":\"FREE_Phonghub$BASE\"}" > Key.json
+        git config user.name "auto"
+        git config user.email "auto@github.com"
+        git add Key.json
+        git commit -m "update"
+        git push
+        sleep 10
+      done
